@@ -7,11 +7,11 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Trophy, Lock, Clock, CheckCircle, Star, Target } from "lucide-react"
 import { achievements, achievementCategories } from "@/lib/data/achievements"
-import { useAuth } from "@/lib/auth"
+import { useSession } from "next-auth/react"
 
 export function AchievementsPage() {
   const [selectedCategory, setSelectedCategory] = useState("all")
-  const { user } = useAuth()
+  const { data: session } = useSession()
 
   const filteredAchievements = achievements.filter((achievement) => {
     switch (selectedCategory) {

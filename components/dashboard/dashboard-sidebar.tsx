@@ -1,158 +1,92 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
-import { useAuth } from "@/lib/auth"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { usePathname } from "next/navigation"
+import { useSession } from "next-auth/react"
 import {
-  Code2,
-  Home,
+  LayoutDashboard,
   BookOpen,
   Users,
   Trophy,
+  User,
   Settings,
-  BarChart3,
-  MessageSquare,
-  Calendar,
-  FileText,
-  UserCheck,
   GraduationCap,
-  ChevronLeft,
-  ChevronRight,
-  LogOut,
+  Package,
 } from "lucide-react"
 
 export function DashboardSidebar() {
-  const [isCollapsed, setIsCollapsed] = useState(false)
-  const { user, logout } = useAuth()
+  const pathname = usePathname()
+  const { data: session } = useSession()
+  const userRole = session?.user?.role?.toLowerCase() || "member"
+  const userId = session?.user?.id
 
-  const getNavigationItems = () => {
-    const baseItems = [
-      { name: "Dashboard", href: "/dashboard", icon: Home },
-      { name: "Courses", href: "/courses", icon: BookOpen },
-      { name: "Community", href: "/community", icon: MessageSquare },
-      { name: "Achievements", href: "/achievements", icon: Trophy },
-    ]
-
-    const roleSpecificItems = {
-      admin: [
-        { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
-        { name: "User Management", href: "/dashboard/users", icon: Users },
-        { name: "Course Management", href: "/dashboard/course-management", icon: FileText },
-        { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
-      ],
-      mentor: [
-        { name: "My Courses", href: "/dashboard/my-courses", icon: GraduationCap },
-        { name: "Students", href: "/dashboard/students", icon: UserCheck },
-        { name: "Schedule", href: "/dashboard/schedule", icon: Calendar },
-        { name: "Analytics", href: "/dashboard/mentor-analytics", icon: BarChart3 },
-      ],
-      member: [
-        { name: "My Learning", href: "/dashboard/learning", icon: GraduationCap },
-        { name: "Progress", href: "/dashboard/progress", icon: BarChart3 },
-        { name: "Certificates", href: "/dashboard/certificates", icon: Trophy },
-      ],
-    }
-
-    return [...baseItems, ...(roleSpecificItems[user?.role || "member"] || [])]
+  // Definisikan item navigasi di dalam komponen untuk mengakses data sesi
+  const navItems = {
+    member: [
+      { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+      { href: "/courses", icon: BookOpen, label: "Courses" },
+      { href: "/community", icon: Users, label: "Community" },
+      { href: "/achievements", icon: Trophy, label: "Achievements" },
+      { href: `/profile/${userId}`, icon: User, label: "Profile" },
+    ],
+    mentor: [
+      { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+      { href: "/mentor/courses", icon: GraduationCap, label: "My Courses" },
+      { href: "/mentor/students", icon: Users, label: "My Students" },
+      { href: "/community", icon: Users, label: "Community" },
+      { href: `/profile/${userId}`, icon: User, label: "Profile" },
+    ],
+    admin: [
+      { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+      { href: "/admin/users", icon: Users, label: "Manage Users" },
+      { href: "/admin/courses", icon: BookOpen, label: "Manage Courses" },
+      { href: "/admin/settings", icon: Settings, label: "System Settings" },
+    ],
   }
 
-  const navigationItems = getNavigationItems()
+  const items = navItems[userRole] || navItems.member
 
   return (
-    <div
-      className={`${
-        isCollapsed ? "w-16" : "w-64"
-      } bg-sidebar border-r border-sidebar-border transition-all duration-300 flex flex-col`}
-    >
-      {/* Header */}
-      <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center justify-between">
-          {!isCollapsed && (
-            <Link href="/" className="flex items-center space-x-2">
-              <Code2 className="h-6 w-6 text-sidebar-primary" />
-              <span className="text-lg font-bold text-sidebar-foreground">CodeLearn</span>
+    <aside className="hidden w-64 flex-col border-r bg-background sm:flex">
+      <div className="flex h-14 items-center border-b px-6">
+        <Link href="/" className="flex items-center gap-2 font-semibold">
+          <Package className="h-6 w-6" />
+          <span>CodeLearn</span>
+        </Link>
+      </div>
+      <div className="flex-1 overflow-auto py-2">
+        <nav className="grid items-start px-4 text-sm font-medium">
+          {items.map(item => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
+                pathname === item.href
+                  ? "bg-muted text-primary"
+                  : "text-muted-foreground"
+              }`}
+            >
+              <item.icon className="h-4 w-4" />
+              {item.label}
             </Link>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="text-sidebar-foreground hover:bg-sidebar-accent"
-          >
-            {isCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
-        </div>
-      </div>
-
-      {/* User Profile */}
-      <div className="p-4 border-b border-sidebar-border">
-        <div className="flex items-center space-x-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={user?.avatar || "/placeholder.svg"} alt={user?.name || "User"} />
-            <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
-          </Avatar>
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.name}</p>
-              <div className="flex items-center space-x-2">
-                <Badge
-                  variant="secondary"
-                  className={`text-xs ${
-                    user?.role === "admin"
-                      ? "bg-red-500/10 text-red-500"
-                      : user?.role === "mentor"
-                        ? "bg-blue-500/10 text-blue-500"
-                        : "bg-green-500/10 text-green-500"
-                  }`}
-                >
-                  {user?.role}
-                </Badge>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 p-4">
-        <ul className="space-y-2">
-          {navigationItems.map((item) => (
-            <li key={item.name}>
-              <Link
-                href={item.href}
-                className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors group"
-              >
-                <item.icon className="h-5 w-5 flex-shrink-0" />
-                {!isCollapsed && <span className="text-sm font-medium">{item.name}</span>}
-              </Link>
-            </li>
           ))}
-        </ul>
-      </nav>
-
-      {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border">
-        <div className="space-y-2">
+        </nav>
+      </div>
+      <div className="mt-auto p-4">
+        <nav className="grid items-start text-sm font-medium">
           <Link
             href="/settings"
-            className="flex items-center space-x-3 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+            className={`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
+              pathname === "/settings"
+                ? "bg-muted text-primary"
+                : "text-muted-foreground"
+            }`}
           >
-            <Settings className="h-5 w-5 flex-shrink-0" />
-            {!isCollapsed && <span className="text-sm font-medium">Settings</span>}
+            <Settings className="h-4 w-4" />
+            Settings
           </Link>
-          <Button
-            variant="ghost"
-            onClick={logout}
-            className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          >
-            <LogOut className="h-5 w-5 flex-shrink-0" />
-            {!isCollapsed && <span className="text-sm font-medium ml-3">Sign Out</span>}
-          </Button>
-        </div>
+        </nav>
       </div>
-    </div>
+    </aside>
   )
 }

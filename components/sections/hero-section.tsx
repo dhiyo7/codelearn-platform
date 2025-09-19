@@ -3,10 +3,11 @@
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Play, Code2, Users, Trophy } from "lucide-react"
 import Link from "next/link"
-import { useAuth } from "@/lib/auth"
+import { useSession } from "next-auth/react"
 
 export function HeroSection() {
-  const { isAuthenticated } = useAuth()
+  const { status } = useSession()
+  const isAuthenticated = status === "authenticated"
 
   return (
     <section className="relative overflow-hidden bg-gradient-to-br from-background via-background to-background/80">

@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Clock, Users, Star, BookOpen, Play, CheckCircle, ArrowLeft, Download, Share2, Heart } from "lucide-react"
 import type { Course } from "@/types/auth"
-import { useAuth } from "@/lib/auth"
+import { useSession } from "next-auth/react"
 import Link from "next/link"
 
 interface CourseDetailProps {
@@ -45,9 +45,10 @@ const mockReviews = [
 
 export function CourseDetail({ course }: CourseDetailProps) {
   const [isLiked, setIsLiked] = useState(false)
-  const { user, isAuthenticated } = useAuth()
+  const { data: session, status } = useSession()
+  const isAuthenticated = status === "authenticated"
 
-  const isEnrolled = user && course.progress !== undefined && course.progress > 0
+  const isEnrolled = session && course.progress !== undefined && course.progress > 0
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {

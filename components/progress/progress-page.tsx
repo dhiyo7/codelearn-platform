@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -54,11 +55,76 @@ const courseProgress = [
   { name: "DevOps Fundamentals", progress: 8, totalLessons: 40, completedLessons: 3 },
 ]
 
+// Define an interface for the progress data structure
+interface ProgressData {
+  currentStreak: number;
+  longestStreak: number;
+  totalHours: number;
+  completionRate: number;
+  weeklyProgress: { day: string; hours: number; lessons: number }[];
+  monthlyProgress: { month: string; completed: number; started: number }[];
+  skillDistribution: { name: string; value: number; color: string }[];
+  courseProgress: { name: string; progress: number; totalLessons: number; completedLessons: number }[];
+  learningGoals: { description: string; current: number; total: number; icon: string }[];
+}
+
+const iconComponents: { [key: string]: React.ElementType } = {
+  CheckCircle,
+  Clock,
+  Target,
+};
+
 export function ProgressPage() {
-  const currentStreak = 12
-  const longestStreak = 28
-  const totalHours = 156
-  const completionRate = 78
+  const [progressData, setProgressData] = useState<ProgressData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/progress');
+        if (!response.ok) {
+          throw new Error('Failed to fetch progress data');
+        }
+        const data = await response.json();
+        setProgressData(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-red-500 text-center">{error}</div>;
+  }
+
+  if (!progressData) {
+    return <div className="text-center">No progress data available.</div>;
+  }
+
+  const {
+    currentStreak,
+    longestStreak,
+    totalHours,
+    completionRate,
+    weeklyProgress,
+    monthlyProgress,
+    skillDistribution,
+    courseProgress,
+    learningGoals,
+  } = progressData;
 
   return (
     <div className="space-y-6">
@@ -88,7 +154,7 @@ export function ProgressPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{totalHours}h</div>
-            <p className="text-xs text-muted-foreground">+8h this week</p>
+            <p className="text-xs text-muted-foreground\">+8h this week</p>
           </CardContent>
         </Card>
 
@@ -99,7 +165,7 @@ export function ProgressPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{completionRate}%</div>
-            <p className="text-xs text-muted-foreground">+12% from last month</p>
+            <p className="text-xs text-muted-foreground\">+12% from last month</p>
           </CardContent>
         </Card>
 
@@ -230,38 +296,25 @@ export function ProgressPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center space-x-3">
-                <CheckCircle className="h-5 w-5 text-green-500" />
-                <div>
-                  <p className="font-medium">Complete 3 courses this quarter</p>
-                  <p className="text-sm text-muted-foreground">2 of 3 completed</p>
+            {learningGoals.map((goal, index) => {
+              const Icon = iconComponents[goal.icon];
+              const progressValue = (goal.current / goal.total) * 100;
+              return (
+                <div key={index} className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    {Icon && <Icon className={`h-5 w-5 ${
+                      progressValue === 100 ? 'text-green-500' : 
+                      goal.icon === 'Clock' ? 'text-yellow-500' : 'text-blue-500'
+                    }`} />}
+                    <div>
+                      <p className="font-medium">{goal.description}</p>
+                      <p className="text-sm text-muted-foreground">{goal.current} of {goal.total} completed</p>
+                    </div>
+                  </div>
+                  <Progress value={progressValue} className="w-24 h-2" />
                 </div>
-              </div>
-              <Progress value={67} className="w-24 h-2" />
-            </div>
-
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center space-x-3">
-                <Clock className="h-5 w-5 text-yellow-500" />
-                <div>
-                  <p className="font-medium">Study 20 hours per month</p>
-                  <p className="text-sm text-muted-foreground">16 of 20 hours this month</p>
-                </div>
-              </div>
-              <Progress value={80} className="w-24 h-2" />
-            </div>
-
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center space-x-3">
-                <Target className="h-5 w-5 text-blue-500" />
-                <div>
-                  <p className="font-medium">Build 2 portfolio projects</p>
-                  <p className="text-sm text-muted-foreground">1 of 2 completed</p>
-                </div>
-              </div>
-              <Progress value={50} className="w-24 h-2" />
-            </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>

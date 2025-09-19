@@ -1,6 +1,5 @@
 import { CourseDetail } from "@/components/courses/course-detail"
 import { Navbar } from "@/components/navigation/navbar"
-import { AuthProvider } from "@/lib/auth"
 import { courses } from "@/lib/data/courses"
 import { notFound } from "next/navigation"
 
@@ -18,11 +17,9 @@ export default function CoursePage({ params }: CoursePageProps) {
   }
 
   return (
-    <AuthProvider>
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <CourseDetail course={course} />
-      </div>
-    </AuthProvider>
+    <div className="min-h-screen bg-background">
+      <Navbar />
+      <CourseDetail course={course} />
+    </div>
   )
 }

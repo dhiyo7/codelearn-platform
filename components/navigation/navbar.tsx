@@ -12,30 +12,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useAuth } from "@/lib/auth"
-import { Code2, Menu, X, Settings, LogOut, User, BookOpen } from "lucide-react"
+import { useSession, signOut } from "next-auth/react"
+import { Code2, Menu, X, Settings, LogOut, User, LayoutDashboard } from "lucide-react"
 
 export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const { user, logout, isAuthenticated } = useAuth()
+  const { data: session, status } = useSession()
+  const isAuthenticated = status === "authenticated"
 
   const navigation = [
     { name: "Courses", href: "/courses" },
     { name: "Community", href: "/community" },
     { name: "Achievements", href: "/achievements" },
   ]
-
-  const roleBasedNavigation = {
-    admin: [
-      { name: "Admin Panel", href: "/admin" },
-      { name: "Analytics", href: "/admin/analytics" },
-    ],
-    mentor: [
-      { name: "My Courses", href: "/mentor/courses" },
-      { name: "Students", href: "/mentor/students" },
-    ],
-    member: [{ name: "My Progress", href: "/dashboard" }],
-  }
 
   return (
     <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -51,7 +40,7 @@ export function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
-              {navigation.map((item) => (
+              {navigation.map(item => (
                 <Link
                   key={item.name}
                   href={item.href}
@@ -60,50 +49,39 @@ export function Navbar() {
                   {item.name}
                 </Link>
               ))}
-              {isAuthenticated &&
-                user &&
-                roleBasedNavigation[user.role]?.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className="rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                  >
-                    {item.name}
-                  </Link>
-                ))}
             </div>
           </div>
 
           {/* User Menu */}
           <div className="hidden md:block">
-            {isAuthenticated && user ? (
+            {isAuthenticated && session.user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
-                      <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+                      <AvatarImage src={session.user.image || "/placeholder.svg"} alt={session.user.name || ""} />
+                      <AvatarFallback>{session.user.name?.charAt(0)}</AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{user.name}</p>
-                      <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
-                      <p className="text-xs leading-none text-muted-foreground capitalize">{user.role}</p>
+                      <p className="text-sm font-medium leading-none">{session.user.name}</p>
+                      <p className="text-xs leading-none text-muted-foreground">{session.user.email}</p>
+                      <p className="text-xs leading-none text-muted-foreground capitalize">{session?.user?.role}</p>
                     </div>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/profile">
+                    <Link href={`/profile/${session.user.id}`}>
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/dashboard">
-                      <BookOpen className="mr-2 h-4 w-4" />
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
                       Dashboard
                     </Link>
                   </DropdownMenuItem>
@@ -114,7 +92,7 @@ export function Navbar() {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout}>
+                  <DropdownMenuItem onClick={() => signOut()}>
                     <LogOut className="mr-2 h-4 w-4" />
                     Log out
                   </DropdownMenuItem>
@@ -145,7 +123,7 @@ export function Navbar() {
       {isMobileMenuOpen && (
         <div className="md:hidden">
           <div className="space-y-1 px-2 pb-3 pt-2 sm:px-3">
-            {navigation.map((item) => (
+            {navigation.map(item => (
               <Link
                 key={item.name}
                 href={item.href}
@@ -155,18 +133,28 @@ export function Navbar() {
                 {item.name}
               </Link>
             ))}
-            {isAuthenticated &&
-              user &&
-              roleBasedNavigation[user.role]?.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className="block rounded-md px-3 py-2 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              ))}
+            {isAuthenticated && (
+              <div className="border-t border-gray-700 pt-4 mt-4">
+                <div className="flex items-center px-5">
+                  <div className="flex-shrink-0">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={session?.user?.image || "/placeholder.svg"} alt={session?.user?.name || ""} />
+                      <AvatarFallback>{session?.user?.name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                  </div>
+                  <div className="ml-3">
+                    <div className="text-base font-medium leading-none text-foreground">{session?.user?.name}</div>
+                    <div className="text-sm font-medium leading-none text-muted-foreground">{session?.user?.email}</div>
+                  </div>
+                </div>
+                <div className="mt-3 space-y-1 px-2">
+                  <Link href={`/profile/${session?.user?.id}`} className="block rounded-md px-3 py-2 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => setIsMobileMenuOpen(false)}>Profile</Link>
+                  <Link href="/dashboard" className="block rounded-md px-3 py-2 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => setIsMobileMenuOpen(false)}>Dashboard</Link>
+                  <Link href="/settings" className="block rounded-md px-3 py-2 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent" onClick={() => setIsMobileMenuOpen(false)}>Settings</Link>
+                  <a onClick={() => { signOut(); setIsMobileMenuOpen(false); }} className="block rounded-md px-3 py-2 text-base font-medium text-muted-foreground hover:text-foreground hover:bg-accent">Sign out</a>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

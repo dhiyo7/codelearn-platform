@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -7,102 +8,114 @@ import { Progress } from "@/components/ui/progress"
 import { BookOpen, Clock, Trophy, Target, Play, ArrowRight, Calendar, Star } from "lucide-react"
 import Link from "next/link"
 
-const learningStats = [
-  {
-    title: "Courses Enrolled",
-    value: "6",
-    change: "+2 this month",
-    icon: BookOpen,
-  },
-  {
-    title: "Hours Learned",
-    value: "47",
-    change: "+8 this week",
-    icon: Clock,
-  },
-  {
-    title: "Achievements",
-    value: "12",
-    change: "+3 new badges",
-    icon: Trophy,
-  },
-  {
-    title: "Completion Rate",
-    value: "78%",
-    change: "+12% improvement",
-    icon: Target,
-  },
-]
+// Define interfaces for the dashboard data structures
+interface LearningStat {
+  title: string;
+  value: string;
+  change: string;
+  icon: React.ElementType;
+}
 
-const currentCourses = [
-  {
-    id: "1",
-    name: "Full-Stack JavaScript",
-    progress: 65,
-    nextLesson: "React Hooks Deep Dive",
-    timeLeft: "2h 30m",
-    instructor: "Sarah Johnson",
-  },
-  {
-    id: "2",
-    name: "Python for Data Science",
-    progress: 42,
-    nextLesson: "Data Visualization with Matplotlib",
-    timeLeft: "1h 45m",
-    instructor: "Dr. Alex Chen",
-  },
-  {
-    id: "3",
-    name: "Mobile App Development",
-    progress: 23,
-    nextLesson: "Navigation in React Native",
-    timeLeft: "3h 15m",
-    instructor: "Mike Rodriguez",
-  },
-]
+interface CurrentCourse {
+  id: string;
+  name: string;
+  progress: number;
+  nextLesson: string;
+  timeLeft: string;
+  instructor: string;
+}
 
-const recentAchievements = [
-  { name: "JavaScript Master", description: "Completed 10 JavaScript challenges", icon: "🏆", date: "2 days ago" },
-  { name: "Fast Learner", description: "Completed 5 lessons in one day", icon: "⚡", date: "1 week ago" },
-  { name: "Problem Solver", description: "Solved 25 coding problems", icon: "🧩", date: "2 weeks ago" },
-]
+interface RecentAchievement {
+  name: string;
+  description: string;
+  icon: string;
+  date: string;
+}
 
-const recommendedCourses = [
-  {
-    id: "4",
-    name: "Advanced React Patterns",
-    difficulty: "Advanced",
-    duration: "8 weeks",
-    rating: 4.9,
-    students: 2340,
-  },
-  {
-    id: "5",
-    name: "Backend API Development",
-    difficulty: "Intermediate",
-    duration: "10 weeks",
-    rating: 4.7,
-    students: 1890,
-  },
-]
+interface RecommendedCourse {
+  id: string;
+  name: string;
+  difficulty: string;
+  duration: string;
+  rating: number;
+  students: number;
+}
+
+interface DashboardData {
+  learningStats: Omit<LearningStat, 'icon'>[];
+  currentCourses: CurrentCourse[];
+  recentAchievements: RecentAchievement[];
+  recommendedCourses: RecommendedCourse[];
+}
+
+const iconMap: { [key: string]: React.ElementType } = {
+  "Courses Enrolled": BookOpen,
+  "Hours Learned": Clock,
+  "Achievements": Trophy,
+  "Completion Rate": Target,
+};
 
 export function MemberDashboard() {
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/dashboard');
+        if (!response.ok) {
+          throw new Error('Failed to fetch dashboard data');
+        }
+        const data = await response.json();
+        setDashboardData(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div className="text-red-500 text-center">{error}</div>;
+  }
+
+  if (!dashboardData) {
+    return <div className="text-center">No dashboard data available.</div>;
+  }
+  
+  const { learningStats, currentCourses, recentAchievements, recommendedCourses } = dashboardData;
+
   return (
     <div className="space-y-6">
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {learningStats.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.change}</p>
-            </CardContent>
-          </Card>
-        ))}
+        {learningStats.map((stat) => {
+          const Icon = iconMap[stat.title];
+          return (
+            <Card key={stat.title}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-muted-foreground">{stat.change}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

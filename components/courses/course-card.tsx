@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Clock, Users, Star, BookOpen, Play, Heart, ArrowRight } from "lucide-react"
 import type { Course } from "@/types/auth"
-import { useAuth } from "@/lib/auth"
+import { useSession } from "next-auth/react"
 import Link from "next/link"
 
 interface CourseCardProps {
@@ -17,7 +17,8 @@ interface CourseCardProps {
 
 export function CourseCard({ course }: CourseCardProps) {
   const [isLiked, setIsLiked] = useState(false)
-  const { user, isAuthenticated } = useAuth()
+  const { data: session, status } = useSession()
+  const isAuthenticated = status === "authenticated"
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -32,7 +33,7 @@ export function CourseCard({ course }: CourseCardProps) {
     }
   }
 
-  const isEnrolled = user && course.progress !== undefined && course.progress > 0
+  const isEnrolled = session && course.progress !== undefined && course.progress > 0
 
   return (
     <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-border/50">

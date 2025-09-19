@@ -1,64 +1,53 @@
 "use client"
 
-import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Bell, Search, Plus } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Menu, CircleUserRound } from "lucide-react"
+import { DashboardSidebar } from "./dashboard-sidebar"
+import { useSession, signOut } from "next-auth/react"
 
 export function DashboardHeader() {
-  const { user } = useAuth()
-
-  const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour < 12) return "Good morning"
-    if (hour < 18) return "Good afternoon"
-    return "Good evening"
-  }
+  const { data: session } = useSession()
 
   return (
-    <header className="bg-background border-b border-border px-6 py-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">
-            {getGreeting()}, {user?.name?.split(" ")[0]}!
-          </h1>
-          <p className="text-muted-foreground">
-            {user?.role === "admin"
-              ? "Manage your platform and monitor progress"
-              : user?.role === "mentor"
-                ? "Guide your students and track their progress"
-                : "Continue your learning journey"}
-          </p>
-        </div>
-
-        <div className="flex items-center space-x-4">
-          {/* Search */}
-          <div className="relative hidden md:block">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search courses, students..." className="pl-10 w-64" />
-          </div>
-
-          {/* Quick Actions */}
-          {user?.role === "mentor" && (
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              New Course
-            </Button>
-          )}
-
-          {user?.role === "admin" && (
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Add User
-            </Button>
-          )}
-
-          {/* Notifications */}
-          <Button variant="outline" size="sm">
-            <Bell className="h-4 w-4" />
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+      <Sheet>
+        <SheetTrigger asChild>
+          <Button size="icon" variant="outline" className="sm:hidden">
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle Menu</span>
           </Button>
-        </div>
+        </SheetTrigger>
+        <SheetContent side="left" className="sm:max-w-xs">
+          <DashboardSidebar />
+        </SheetContent>
+      </Sheet>
+      <div className="relative ml-auto flex-1 md:grow-0">
+        {/* Placeholder for search bar if needed */}
       </div>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="icon" className="overflow-hidden rounded-full">
+            <CircleUserRound className="h-5 w-5" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>{session?.user?.name}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem>Settings</DropdownMenuItem>
+          <DropdownMenuItem>Support</DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => signOut()}>Logout</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </header>
   )
 }

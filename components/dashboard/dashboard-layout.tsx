@@ -1,6 +1,6 @@
 "use client"
 
-import { useAuth } from "@/lib/auth"
+import { useSession } from "next-auth/react"
 import { AdminDashboard } from "./admin-dashboard"
 import { MentorDashboard } from "./mentor-dashboard"
 import { MemberDashboard } from "./member-dashboard"
@@ -9,9 +9,9 @@ import { DashboardHeader } from "./dashboard-header"
 import { LoginForm } from "@/components/auth/login-form"
 
 export function DashboardLayout() {
-  const { user, isAuthenticated, isLoading } = useAuth()
+  const { data: session, status } = useSession()
 
-  if (isLoading) {
+  if (status === "loading") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -19,7 +19,7 @@ export function DashboardLayout() {
     )
   }
 
-  if (!isAuthenticated || !user) {
+  if (status === "unauthenticated") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <div className="w-full max-w-md space-y-8">
@@ -34,7 +34,7 @@ export function DashboardLayout() {
   }
 
   const renderDashboard = () => {
-    switch (user.role) {
+    switch (session?.user?.role?.toLowerCase()) {
       case "admin":
         return <AdminDashboard />
       case "mentor":
