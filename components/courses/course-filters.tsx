@@ -4,15 +4,16 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Search, Filter, X } from "lucide-react"
-import { categories, difficulties } from "@/lib/data/courses"
 
 interface CourseFiltersProps {
   searchQuery: string
   onSearchChange: (query: string) => void
   selectedCategory: string
   onCategoryChange: (category: string) => void
+  categories: string[]
   selectedDifficulty: string
   onDifficultyChange: (difficulty: string) => void
+  difficulties: string[]
   sortBy: string
   onSortChange: (sort: string) => void
 }
@@ -22,8 +23,10 @@ export function CourseFilters({
   onSearchChange,
   selectedCategory,
   onCategoryChange,
+  categories,
   selectedDifficulty,
   onDifficultyChange,
+  difficulties,
   sortBy,
   onSortChange,
 }: CourseFiltersProps) {
@@ -41,7 +44,7 @@ export function CourseFilters({
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="Search courses, topics, or technologies..."
+          placeholder="Search courses..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-10"
@@ -56,7 +59,7 @@ export function CourseFilters({
         </div>
 
         <Select value={selectedCategory} onValueChange={onCategoryChange}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-auto min-w-[150px]">
             <SelectValue placeholder="Category" />
           </SelectTrigger>
           <SelectContent>
@@ -69,7 +72,7 @@ export function CourseFilters({
         </Select>
 
         <Select value={selectedDifficulty} onValueChange={onDifficultyChange}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-auto min-w-[130px]">
             <SelectValue placeholder="Difficulty" />
           </SelectTrigger>
           <SelectContent>
@@ -77,12 +80,11 @@ export function CourseFilters({
               <SelectItem key={difficulty} value={difficulty}>
                 {difficulty}
               </SelectItem>
-            ))}
-          </SelectContent>
+            ))}\n          </SelectContent>
         </Select>
 
         <Select value={sortBy} onValueChange={onSortChange}>
-          <SelectTrigger className="w-[140px]">
+          <SelectTrigger className="w-auto min-w-[140px]">
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
           <SelectContent>

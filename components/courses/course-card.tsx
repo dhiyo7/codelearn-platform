@@ -1,45 +1,41 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { useSession } from "next-auth/react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Clock, Users, Star, BookOpen, Play, Heart, ArrowRight } from "lucide-react"
-import type { Course } from "@/types/auth"
-import { useSession } from "next-auth/react"
+import type { CourseSummary } from "@/types/course"
 import Link from "next/link"
 
 interface CourseCardProps {
-  course: Course
+  course: CourseSummary
 }
 
 export function CourseCard({ course }: CourseCardProps) {
+  const { data: session } = useSession()
   const [isLiked, setIsLiked] = useState(false)
-  const { data: session, status } = useSession()
-  const isAuthenticated = status === "authenticated"
 
-  const getDifficultyColor = (difficulty: string) => {
+  const getDifficultyColor = (difficulty: string | null | undefined) => {
     switch (difficulty) {
-      case "beginner":
+      case "Beginner":
         return "bg-green-500/10 text-green-500 border-green-500/20"
-      case "intermediate":
+      case "Intermediate":
         return "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
-      case "advanced":
+      case "Advanced":
         return "bg-red-500/10 text-red-500 border-red-500/20"
       default:
         return "bg-muted text-muted-foreground"
     }
   }
 
-  const isEnrolled = session && course.progress !== undefined && course.progress > 0
-
   return (
     <Card className="group overflow-hidden hover:shadow-xl transition-all duration-300 hover:scale-[1.02] border-border/50">
       <div className="relative aspect-video overflow-hidden">
         <img
-          src={course.thumbnail || "/placeholder.svg"}
+          src={course.imageUrl || "/placeholder.svg"}
           alt={course.title}
           className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
@@ -76,21 +72,23 @@ export function CourseCard({ course }: CourseCardProps) {
             <CardTitle className="text-lg line-clamp-2 group-hover:text-primary transition-colors">
               {course.title}
             </CardTitle>
-            <CardDescription className="text-sm mt-2 line-clamp-2">{course.description}</CardDescription>
+            {/* The description is not available in CourseSummary, so we remove it or use a fallback */}
           </div>
           <div className="flex items-center space-x-1 ml-4">
             <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-            <span className="text-sm font-medium">{course.rating}</span>
+            <span className="text-sm font-medium">
+              {(typeof course.averageRating === 'number' ? course.averageRating : 0).toFixed(1)}
+            </span>
           </div>
         </div>
 
         {/* Instructor */}
         <div className="flex items-center space-x-2 mt-3">
           <Avatar className="h-6 w-6">
-            <AvatarImage src={`/generic-placeholder-graphic.png?key=${course.instructor}`} alt={course.instructor} />
-            <AvatarFallback className="text-xs">{course.instructor.charAt(0)}</AvatarFallback>
+            <AvatarImage src={course.instructor.image || ""} alt={course.instructor.name || ""} />
+            <AvatarFallback className="text-xs">{course.instructor.name?.charAt(0)}</AvatarFallback>
           </Avatar>
-          <span className="text-sm text-muted-foreground">{course.instructor}</span>
+          <span className="text-sm text-muted-foreground">{course.instructor.name}</span>
         </div>
       </CardHeader>
 
@@ -98,8 +96,8 @@ export function CourseCard({ course }: CourseCardProps) {
         {/* Tags */}
         <div className="flex flex-wrap gap-1">
           {course.tags.slice(0, 3).map((tag) => (
-            <Badge key={tag} variant="outline" className="text-xs">
-              {tag}
+            <Badge key={tag.id} variant="outline" className="text-xs">
+              {tag.name}
             </Badge>
           ))}
           {course.tags.length > 3 && (
@@ -117,61 +115,30 @@ export function CourseCard({ course }: CourseCardProps) {
           </div>
           <div className="flex items-center space-x-1">
             <BookOpen className="h-4 w-4" />
-            <span>{course.lessons} lessons</span>
+            <span>{course.totalLessons} lessons</span>
           </div>
           <div className="flex items-center space-x-1">
             <Users className="h-4 w-4" />
-            <span>{course.students.toLocaleString()}</span>
+            <span>{course.totalStudents.toLocaleString()}</span>
           </div>
         </div>
 
-        {/* Progress Bar (if enrolled) */}
-        {isEnrolled && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Progress</span>
-              <span className="font-medium">{course.progress}%</span>
-            </div>
-            <Progress value={course.progress} className="h-2" />
-          </div>
-        )}
-
         {/* Action Buttons */}
-        <div className="flex gap-2">
-          {isAuthenticated ? (
-            <>
-              {isEnrolled ? (
-                <Button className="flex-1" asChild>
-                  <Link href={`/courses/${course.id}/continue`}>
-                    Continue Learning
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              ) : (
-                <Button className="flex-1" asChild>
-                  <Link href={`/courses/${course.id}`}>
-                    Enroll Now
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              )}
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/courses/${course.id}`}>Preview</Link>
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button className="flex-1" asChild>
-                <Link href="/signup">
-                  Get Started
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/courses/${course.id}`}>Preview</Link>
-              </Button>
-            </>
-          )}
+        <div className="flex gap-2 pt-4">
+          <Button className="flex-1" asChild>
+            <Link href={`/courses/${course.id}`}>
+              View Details
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0"
+            onClick={() => setIsLiked(!isLiked)}
+          >
+            <Heart className={`h-4 w-4 ${isLiked ? "fill-red-500 text-red-500" : ""}`} />
+          </Button>
         </div>
       </CardContent>
     </Card>

@@ -47,31 +47,54 @@ model Session {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  role          Role      @default(MEMBER)
-  accounts      Account[]
-  sessions      Session[]
-  enrollments   Enrollment[]
+  id                   String       @id @default(cuid())
+  name                 String?
+  email                String?      @unique
+  emailVerified        DateTime?
+  image                String?
+  password             String?
+  role                 Role         @default(MEMBER)
+  accounts             Account[]
+  sessions             Session[]
+  enrollments          Enrollment[]
+  reviews              Review[]
+  coursesAsInstructor  Course[]     @relation("CourseInstructor")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
+model Category {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  courses Course[]
+}
+
+model Tag {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  courses Course[]
+}
+
 model Course {
-  id          String       @id @default(cuid())
-  title       String
-  description String       @db.Text
-  imageUrl    String?
-  isPublished Boolean      @default(false)
-  modules     Module[]
-  enrollments Enrollment[]
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id           String       @id @default(cuid())
+  title        String
+  description  String       @db.Text
+  imageUrl     String?
+  isPublished  Boolean      @default(false)
+  difficulty   String?
+  duration     Int? // Duration in minutes
+  modules      Module[]
+  enrollments  Enrollment[]
+  reviews      Review[]
+  tags         Tag[]
+  category     Category?    @relation(fields: [categoryId], references: [id])
+  categoryId   String?
+  instructor   User?        @relation("CourseInstructor", fields: [instructorId], references: [id])
+  instructorId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Module {
@@ -88,6 +111,9 @@ model Lesson {
   id          String     @id @default(cuid())
   title       String
   content     String     @db.Text
+  videoUrl    String?
+  duration    Int? // Duration in minutes
+  isFree      Boolean    @default(false)
   moduleId    String
   module      Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   progress    Progress[]
@@ -103,6 +129,20 @@ model Enrollment {
   course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
   progress  Float    @default(0)
   createdAt DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String?  @db.Text
+  userId    String
+  courseId  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([userId, courseId])
 }

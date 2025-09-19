@@ -3,9 +3,13 @@
 import { useState, useMemo } from "react"
 import { CourseCard } from "./course-card"
 import { CourseFilters } from "./course-filters"
-import { courses } from "@/lib/data/courses"
+import { CourseSummary } from "@/types/course"
 
-export function CourseCatalog() {
+interface CourseCatalogProps {
+  courses: CourseSummary[];
+}
+
+export default function CourseCatalog({ courses }: CourseCatalogProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All Courses")
   const [selectedDifficulty, setSelectedDifficulty] = useState("All Levels")
@@ -14,20 +18,14 @@ export function CourseCatalog() {
   const filteredAndSortedCourses = useMemo(() => {
     const filtered = courses.filter((course) => {
       const matchesSearch =
-        course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+        course.title.toLowerCase().includes(searchQuery.toLowerCase())
 
       const matchesCategory =
         selectedCategory === "All Courses" ||
-        course.tags.some(
-          (tag) =>
-            selectedCategory.toLowerCase().includes(tag.toLowerCase()) ||
-            tag.toLowerCase().includes(selectedCategory.toLowerCase()),
-        )
+        course.category?.name.toLowerCase() === selectedCategory.toLowerCase()
 
       const matchesDifficulty =
-        selectedDifficulty === "All Levels" || course.difficulty.toLowerCase() === selectedDifficulty.toLowerCase()
+        selectedDifficulty === "All Levels" || (course.difficulty && course.difficulty.toLowerCase() === selectedDifficulty.toLowerCase())
 
       return matchesSearch && matchesCategory && matchesDifficulty
     })
@@ -35,27 +33,34 @@ export function CourseCatalog() {
     // Sort courses
     switch (sortBy) {
       case "popular":
-        filtered.sort((a, b) => b.students - a.students)
+        filtered.sort((a, b) => b.totalStudents - a.totalStudents)
         break
       case "rating":
-        filtered.sort((a, b) => b.rating - a.rating)
+        filtered.sort((a, b) => b.averageRating - a.averageRating)
         break
       case "newest":
-        filtered.sort((a, b) => Number.parseInt(b.id) - Number.parseInt(a.id))
+        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         break
       case "duration":
-        filtered.sort((a, b) => {
-          const aDuration = Number.parseInt(a.duration.split(" ")[0])
-          const bDuration = Number.parseInt(b.duration.split(" ")[0])
-          return aDuration - bDuration
-        })
+        filtered.sort((a, b) => (a.duration || 0) - (b.duration || 0))
         break
       default:
         break
     }
 
     return filtered
-  }, [searchQuery, selectedCategory, selectedDifficulty, sortBy])
+  }, [courses, searchQuery, selectedCategory, selectedDifficulty, sortBy])
+
+  const categories = useMemo(() => {
+    const allCategories = courses.map(course => course.category?.name).filter(Boolean) as string[];
+    return ["All Courses", ...Array.from(new Set(allCategories))];
+  }, [courses]);
+
+  const difficulties = useMemo(() => {
+    const allDifficulties = courses.map(course => course.difficulty).filter(Boolean) as string[];
+    return ["All Levels", ...Array.from(new Set(allDifficulties))];
+  }, [courses]);
+
 
   return (
     <div className="space-y-6">
@@ -64,8 +69,10 @@ export function CourseCatalog() {
         onSearchChange={setSearchQuery}
         selectedCategory={selectedCategory}
         onCategoryChange={setSelectedCategory}
+        categories={categories}
         selectedDifficulty={selectedDifficulty}
         onDifficultyChange={setSelectedDifficulty}
+        difficulties={difficulties}
         sortBy={sortBy}
         onSortChange={setSortBy}
       />
